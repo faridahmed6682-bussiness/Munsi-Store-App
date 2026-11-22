@@ -1,0 +1,56 @@
+name: Android CI — build APK + release
+
+# Free plans only: GitHub free public repo + free Actions minutes.
+# On every push to main: build the debug APK and publish/update the
+# v1.0.0 GitHub Release with the APK attached (public download link).
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle 8.5
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: munsi-store-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish / update v1.0.0 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Munsi Store v1.0.0
+          body: |
+            Munsi Store — Android e-commerce app (Rangpur, Bangladesh).
+            Customer app + admin panel. Works offline in demo mode;
+            add google-services.json (Firebase Spark, free) to enable cloud sync.
+            Install: download app-debug.apk and open it on your Android phone.
+          files: app/build/outputs/apk/debug/app-debug.apk
+          draft: false
+          prerelease: false
