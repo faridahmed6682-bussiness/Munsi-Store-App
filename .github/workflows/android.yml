@@ -2,7 +2,7 @@ name: Android CI — build APK + release
 
 # Free plans only: GitHub free public repo + free Actions minutes.
 # On every push to main: build the debug APK and publish/update the
-# v1.0.0 GitHub Release with the APK attached (public download link).
+# v1.1.0 GitHub Release with the APK attached (public download link).
 on:
   push:
     branches: [ main ]
@@ -24,8 +24,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # setup-android@v3's default package list includes the obsolete
+      # "tools" package (removed by Google), which fails the build with
+      # "Failed to find package 'tools'". Pin explicit valid packages.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
 
       - name: Set up Gradle 8.5
         uses: gradle/actions/setup-gradle@v3
@@ -41,15 +46,18 @@ jobs:
           name: munsi-store-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Publish / update v1.0.0 release
+      - name: Publish / update v1.1.0 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: Munsi Store v1.0.0
+          tag_name: v1.1.0
+          name: Munsi Store v1.1.0
           body: |
             Munsi Store — Android e-commerce app (Rangpur, Bangladesh).
-            Customer app + admin panel. Works offline in demo mode;
-            add google-services.json (Firebase Spark, free) to enable cloud sync.
+            Customer app + admin panel, Daraz-style features: flash sale,
+            vouchers, bKash/Nagad/Rocket, reviews, filters, address book,
+            order tracking, returns, referral/coins, seller mode.
+            Works offline in demo mode; add google-services.json
+            (Firebase Spark, free) to enable cloud sync.
             Install: download app-debug.apk and open it on your Android phone.
           files: app/build/outputs/apk/debug/app-debug.apk
           draft: false
