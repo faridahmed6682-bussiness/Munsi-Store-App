@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -439,9 +440,7 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             val firebaseAuth = FirebaseManager.auth()
             if (firebaseAuth != null) {
                 try {
-                    val result = kotlinx.coroutines.tasks.await(
-                        firebaseAuth.signInWithEmailAndPassword(cleanEmail, password)
-                    )
+                    val result = firebaseAuth.signInWithEmailAndPassword(cleanEmail, password).await()
                     val fbUser = result.user
                     if (fbUser != null) {
                         val local = repo.getLocalUser(cleanEmail)
@@ -476,9 +475,7 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             val firebaseAuth = FirebaseManager.auth()
             if (firebaseAuth != null) {
                 try {
-                    kotlinx.coroutines.tasks.await(
-                        firebaseAuth.createUserWithEmailAndPassword(cleanEmail, password)
-                    )
+                    firebaseAuth.createUserWithEmailAndPassword(cleanEmail, password).await()
                 } catch (e: Exception) {
                     // Fall through to local registration.
                 }

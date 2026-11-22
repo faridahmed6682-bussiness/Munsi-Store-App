@@ -2,6 +2,7 @@ package com.munsistore.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,8 @@ import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.Shower
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -120,8 +123,8 @@ fun StarRating(rating: Double, modifier: Modifier = Modifier) {
     Row(modifier = modifier) {
         for (i in 1..5) {
             androidx.compose.material3.Icon(
-                imageVector = if (rating >= i - 0.25) androidx.compose.material.icons.Icons.Filled.Star
-                else androidx.compose.material.icons.Icons.Filled.StarBorder,
+                imageVector = if (rating >= i - 0.25) Icons.Filled.Star
+                else Icons.Filled.StarBorder,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.size(16.dp)
@@ -137,8 +140,8 @@ fun StarInput(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modif
         for (i in 1..5) {
             androidx.compose.material3.IconButton(onClick = { onSelect(i) }) {
                 androidx.compose.material3.Icon(
-                    imageVector = if (i <= selected) androidx.compose.material.icons.Icons.Filled.Star
-                    else androidx.compose.material.icons.Icons.Filled.StarBorder,
+                    imageVector = if (i <= selected) Icons.Filled.Star
+                    else Icons.Filled.StarBorder,
                     contentDescription = "$i",
                     tint = MaterialTheme.colorScheme.secondary
                 )
