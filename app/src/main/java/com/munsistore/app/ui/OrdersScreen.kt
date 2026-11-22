@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,8 +24,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,15 +46,29 @@ import com.munsistore.app.R
 import com.munsistore.app.data.Order
 import com.munsistore.app.data.OrderItem
 import com.munsistore.app.data.OrderStatus
+import com.munsistore.app.data.ReturnRequest
+import com.munsistore.app.data.ReturnStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
+fun returnStatusLabel(status: String): String {
+    return when (status) {
+        ReturnStatus.REQUESTED -> "Requested"
+        ReturnStatus.APPROVED -> "Approved"
+        ReturnStatus.REJECTED -> "Rejected"
+        ReturnStatus.REFUNDED -> "Refunded"
+        else -> status
+    }
+}
 fun statusLabel(status: String): String {
     return when (status) {
         OrderStatus.PLACED -> "Placed"
         OrderStatus.CONFIRMED -> "Confirmed"
+        OrderStatus.PACKED -> "Packed"
         OrderStatus.SHIPPED -> "Shipped"
+        OrderStatus.OUT_FOR_DELIVERY -> "Out for delivery"
         OrderStatus.DELIVERED -> "Delivered"
         OrderStatus.CANCELLED -> "Cancelled"
         else -> status
@@ -163,10 +181,18 @@ fun OrderDetailScreen(
 ) {
     var order by remember { mutableStateOf<Order?>(null) }
     var items by remember { mutableStateOf<List<OrderItem>>(emptyList()) }
+    var existingReturn by remember { mutableStateOf<ReturnRequest?>(null) }
+    var showReturnDialog by remember { mutableStateOf(false) }
+    var returnReason by remember { mutableStateOf("") }
+    var returnMessage by remember { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val returnRequestedText = stringResource(R.string.return_requested)
+    val returnAlreadyText = stringResource(R.string.return_already_requested)
 
     LaunchedEffect(orderId) {
         order = viewModel.getOrder(orderId)
         items = viewModel.getOrderItems(orderId)
+        existingReturn = viewModel.getReturnForOrder(orderId)
     }
 
     Scaffold(
@@ -220,13 +246,8 @@ fun OrderDetailScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            // Status timeline
-            val steps = listOf(
-                OrderStatus.PLACED,
-                OrderStatus.CONFIRMED,
-                OrderStatus.SHIPPED,
-                OrderStatus.DELIVERED
-            )
+            // Status timeline (Placed → Confirmed → Packed → Shipped → Out for delivery → Delivered)
+            val steps = OrderStatus.timeline
             val currentIndex = steps.indexOf(o.status)
             steps.forEachIndexed { index, step ->
                 val done = o.status == OrderStatus.CANCELLED || index <= currentIndex
@@ -243,6 +264,26 @@ fun OrderDetailScreen(
                         fontWeight = if (done) FontWeight.SemiBold else FontWeight.Normal
                     )
                 }
+            }
+            if (!o.courierName.isNullOrBlank() && o.status != OrderStatus.CANCELLED) {
+                Text(
+                    text = stringResource(R.string.courier) + ": " + o.courierName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            if (o.voucherCode != null) {
+                Text(
+                    text = stringResource(R.string.voucher) + ": " + o.voucherCode +
+                        " (−" + formatPrice(o.discountAmount) + ")",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (o.coinsUsed > 0) {
+                Text(
+                    text = stringResource(R.string.coins_used) + ": " + o.coinsUsed,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
             Text(
                 text = stringResource(R.string.products),
@@ -281,6 +322,64 @@ fun OrderDetailScreen(
                 text = stringResource(R.string.address) + ": " + o.customerAddress,
                 style = MaterialTheme.typography.bodyMedium
             )
+            // Return / refund (Daraz-style) — only for delivered orders.
+            val ret = existingReturn
+            if (ret != null) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.return_request) + ": " + returnStatusLabel(ret.status),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(text = ret.reason, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            } else if (o.status == OrderStatus.DELIVERED) {
+                OutlinedButton(
+                    onClick = { showReturnDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.request_return))
+                }
+            }
+            if (returnMessage != null) {
+                Text(text = returnMessage!!, color = MaterialTheme.colorScheme.primary)
+            }
         }
+    }
+
+    if (showReturnDialog) {
+        AlertDialog(
+            onDismissRequest = { showReturnDialog = false },
+            title = { Text(stringResource(R.string.request_return)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.return_reason_hint))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = returnReason,
+                        onValueChange = { returnReason = it },
+                        label = { Text(stringResource(R.string.return_reason)) },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (returnReason.isBlank()) return@TextButton
+                    viewModel.requestReturn(orderId, returnReason) { ok ->
+                        returnMessage = if (ok) returnRequestedText else returnAlreadyText
+                        if (ok) {
+                            scope.launch { existingReturn = viewModel.getReturnForOrder(orderId) }
+                        }
+                    }
+                    showReturnDialog = false
+                }) { Text(stringResource(R.string.submit)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReturnDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
     }
 }

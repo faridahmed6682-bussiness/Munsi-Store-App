@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,7 +33,9 @@ fun ProfileScreen(
     viewModel: StoreViewModel,
     onLoginClick: () -> Unit,
     onAdminClick: () -> Unit,
-    onOrdersClick: () -> Unit
+    onOrdersClick: () -> Unit,
+    onSellerClick: () -> Unit = {},
+    onAddressesClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     Column(
@@ -55,8 +59,46 @@ fun ProfileScreen(
             style = MaterialTheme.typography.bodyLarge
         )
         if (viewModel.isLoggedIn) {
+            // Coins + referral code
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.coins_balance),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = viewModel.myCoins.toString(),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.referral_code) + ": " + viewModel.myReferralCode,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    if (viewModel.isSeller) {
+                        Text(
+                            text = viewModel.myShopName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
             OutlinedButton(onClick = onOrdersClick, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.my_orders))
+            }
+            OutlinedButton(onClick = onAddressesClick, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.address_book))
+            }
+            OutlinedButton(onClick = onSellerClick, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.seller_dashboard))
             }
             if (viewModel.isAdmin) {
                 Button(onClick = onAdminClick, modifier = Modifier.fillMaxWidth()) {
@@ -101,6 +143,22 @@ fun ProfileScreen(
             ) {
                 Text("English")
             }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.notifications),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Switch(
+                checked = viewModel.notificationsEnabled,
+                onCheckedChange = { viewModel.setNotificationsEnabled(it) }
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(

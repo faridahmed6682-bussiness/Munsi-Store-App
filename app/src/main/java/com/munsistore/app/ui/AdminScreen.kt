@@ -30,8 +30,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,6 +53,10 @@ import com.munsistore.app.data.Categories
 import com.munsistore.app.data.Order
 import com.munsistore.app.data.OrderStatus
 import com.munsistore.app.data.Product
+import com.munsistore.app.data.ReturnRequest
+import com.munsistore.app.data.ReturnStatus
+import com.munsistore.app.data.Voucher
+import com.munsistore.app.data.VoucherType
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,12 +67,15 @@ fun AdminScreen(
     onAddProduct: () -> Unit,
     onEditProduct: (String) -> Unit
 ) {
-    var tab by remember { mutableStateOf(0) } // 0 = orders, 1 = products
+    var tab by remember { mutableStateOf(0) } // 0 orders, 1 products, 2 vouchers, 3 returns
     val allOrders by viewModel.allOrders.collectAsState()
     val products by viewModel.products.collectAsState()
+    val vouchers by viewModel.vouchers.collectAsState()
+    val returns by viewModel.allReturns.collectAsState()
     val totalSales by viewModel.totalSales.collectAsState()
     val pendingCount by viewModel.pendingCount.collectAsState()
     var productToDelete by remember { mutableStateOf<Product?>(null) }
+    var voucherToDelete by remember { mutableStateOf<Voucher?>(null) }
 
     if (!viewModel.isAdmin) {
         Scaffold(
@@ -148,71 +156,25 @@ fun AdminScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            TabRow(selectedTabIndex = tab) {
+            ScrollableTabRow(selectedTabIndex = tab) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.manage_orders)) })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.manage_products)) })
+                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(stringResource(R.string.vouchers)) })
+                Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text(stringResource(R.string.returns)) })
             }
-            if (tab == 0) {
-                if (allOrders.isEmpty()) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(stringResource(R.string.no_orders))
-                    }
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
-                    ) {
-                        items(allOrders) { order ->
-                            AdminOrderRow(
-                                order = order,
-                                onStatusChange = { status ->
-                                    viewModel.updateOrderStatus(order.id, status)
-                                }
-                            )
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
-                ) {
-                    items(products) { product ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = product.name,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = formatPrice(product.price) + " • " +
-                                            stringResource(R.string.stock) + ": " + product.stock,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                                IconButton(onClick = { onEditProduct(product.id) }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_product))
-                                }
-                                IconButton(onClick = { productToDelete = product }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete_product))
-                                }
-                            }
-                        }
-                    }
-                }
+            when (tab) {
+                0 -> OrdersTab(allOrders = allOrders, viewModel = viewModel)
+                1 -> ProductsTab(
+                    products = products,
+                    onEditProduct = onEditProduct,
+                    onDeleteProduct = { productToDelete = it }
+                )
+                2 -> VouchersTab(
+                    vouchers = vouchers,
+                    viewModel = viewModel,
+                    onDeleteVoucher = { voucherToDelete = it }
+                )
+                3 -> ReturnsTab(returns = returns, viewModel = viewModel)
             }
         }
     }
@@ -233,6 +195,270 @@ fun AdminScreen(
                 TextButton(onClick = { productToDelete = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
+    }
+    val deletingVoucher = voucherToDelete
+    if (deletingVoucher != null) {
+        AlertDialog(
+            onDismissRequest = { voucherToDelete = null },
+            title = { Text(stringResource(R.string.delete_voucher)) },
+            text = { Text(stringResource(R.string.delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteVoucher(deletingVoucher)
+                    voucherToDelete = null
+                }) { Text(stringResource(R.string.delete_voucher)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { voucherToDelete = null }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+}
+
+@Composable
+private fun OrdersTab(allOrders: List<Order>, viewModel: StoreViewModel) {
+    if (allOrders.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(stringResource(R.string.no_orders))
+        }
+        return
+    }
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+    ) {
+        items(allOrders) { order ->
+            AdminOrderRow(
+                order = order,
+                onStatusChange = { status ->
+                    viewModel.updateOrderStatus(order.id, status)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductsTab(
+    products: List<Product>,
+    onEditProduct: (String) -> Unit,
+    onDeleteProduct: (Product) -> Unit
+) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+    ) {
+        items(products) { product ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = product.name,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = formatPrice(product.price) + " • " +
+                                stringResource(R.string.stock) + ": " + product.stock +
+                                " • " + product.brand,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    IconButton(onClick = { onEditProduct(product.id) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_product))
+                    }
+                    IconButton(onClick = { onDeleteProduct(product) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete_product))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VouchersTab(
+    vouchers: List<Voucher>,
+    viewModel: StoreViewModel,
+    onDeleteVoucher: (Voucher) -> Unit
+) {
+    var code by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf(VoucherType.PERCENT) }
+    var value by remember { mutableStateOf("") }
+    var minOrder by remember { mutableStateOf("") }
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+    ) {
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.create_voucher),
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = { code = it.uppercase() },
+                        label = { Text(stringResource(R.string.voucher_code_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            VoucherType.PERCENT to stringResource(R.string.voucher_percent),
+                            VoucherType.FIXED to stringResource(R.string.voucher_fixed),
+                            VoucherType.FREE_DELIVERY to stringResource(R.string.voucher_free_delivery)
+                        ).forEach { (value, label) ->
+                            androidx.compose.material3.FilterChip(
+                                selected = type == value,
+                                onClick = { type = value },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
+                    if (type != VoucherType.FREE_DELIVERY) {
+                        OutlinedTextField(
+                            value = value,
+                            onValueChange = { value = it.filter { c -> c.isDigit() } },
+                            label = { Text(if (type == VoucherType.PERCENT) stringResource(R.string.voucher_percent_value) else stringResource(R.string.voucher_amount_value)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    OutlinedTextField(
+                        value = minOrder,
+                        onValueChange = { minOrder = it.filter { c -> c.isDigit() } },
+                        label = { Text(stringResource(R.string.voucher_min_order)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = {
+                            if (code.isBlank()) return@Button
+                            viewModel.saveVoucher(
+                                Voucher(
+                                    code = code.trim(),
+                                    type = type,
+                                    value = value.toDoubleOrNull() ?: 0.0,
+                                    minOrder = minOrder.toDoubleOrNull() ?: 0.0,
+                                    active = true
+                                )
+                            )
+                            code = ""; value = ""; minOrder = ""
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.create_voucher))
+                    }
+                }
+            }
+        }
+        items(vouchers) { voucher ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = voucher.code, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = when (voucher.type) {
+                                VoucherType.PERCENT -> voucher.value.toInt().toString() + "% off"
+                                VoucherType.FIXED -> "−" + formatPrice(voucher.value)
+                                else -> stringResource(R.string.voucher_free_delivery)
+                            } + " • " + stringResource(R.string.voucher_min_order) + ": " + formatPrice(voucher.minOrder),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Switch(
+                        checked = voucher.active,
+                        onCheckedChange = { viewModel.setVoucherActive(voucher.code, it) }
+                    )
+                    IconButton(onClick = { onDeleteVoucher(voucher) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete_voucher))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReturnsTab(returns: List<ReturnRequest>, viewModel: StoreViewModel) {
+    if (returns.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(stringResource(R.string.no_returns))
+        }
+        return
+    }
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+    ) {
+        items(returns) { req ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = req.orderId, fontWeight = FontWeight.Bold)
+                        StatusChip(status = req.status, label = returnStatusLabel(req.status))
+                    }
+                    Text(text = req.reason, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = req.userEmail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (req.status == ReturnStatus.REQUESTED) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick = { viewModel.updateReturnStatus(req.id, ReturnStatus.APPROVED) }) {
+                                Text(stringResource(R.string.approve))
+                            }
+                            OutlinedButton(onClick = { viewModel.updateReturnStatus(req.id, ReturnStatus.REJECTED) }) {
+                                Text(stringResource(R.string.reject))
+                            }
+                        }
+                    }
+                    if (req.status == ReturnStatus.APPROVED) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = { viewModel.updateReturnStatus(req.id, ReturnStatus.REFUNDED) }) {
+                            Text(stringResource(R.string.mark_refunded))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -277,25 +503,18 @@ private fun AdminOrderRow(order: Order, onStatusChange: (String) -> Unit) {
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = formatPrice(order.totalAmount) + " • " + order.paymentMethod,
+                text = formatPrice(order.totalAmount) + " • " + order.paymentMethod +
+                    (if (!order.trxId.isNullOrBlank()) " • Trx: " + order.trxId else "") +
+                    (if (!order.courierName.isNullOrBlank()) " • " + order.courierName else ""),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (order.status == OrderStatus.PLACED) {
-                    OutlinedButton(onClick = { onStatusChange(OrderStatus.CONFIRMED) }) {
-                        Text(stringResource(R.string.confirmed))
-                    }
-                }
-                if (order.status == OrderStatus.CONFIRMED) {
-                    OutlinedButton(onClick = { onStatusChange(OrderStatus.SHIPPED) }) {
-                        Text(stringResource(R.string.shipped))
-                    }
-                }
-                if (order.status == OrderStatus.SHIPPED) {
-                    OutlinedButton(onClick = { onStatusChange(OrderStatus.DELIVERED) }) {
-                        Text(stringResource(R.string.delivered))
+                val next = OrderStatus.next(order.status)
+                if (next != null) {
+                    OutlinedButton(onClick = { onStatusChange(next) }) {
+                        Text(statusLabel(next))
                     }
                 }
                 if (order.status != OrderStatus.DELIVERED && order.status != OrderStatus.CANCELLED) {
@@ -323,6 +542,7 @@ fun AdminProductScreen(
     var price by remember { mutableStateOf("") }
     var oldPrice by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(Categories.GROCERY) }
+    var brand by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf("") }
     var featured by remember { mutableStateOf(false) }
@@ -339,6 +559,7 @@ fun AdminProductScreen(
                 price = p.price.toString()
                 oldPrice = p.oldPrice?.toString() ?: ""
                 category = p.category
+                brand = p.brand
                 stock = p.stock.toString()
                 imageUrl = p.imageUrl ?: ""
                 featured = p.isFeatured
@@ -398,6 +619,11 @@ fun AdminProductScreen(
                 label = { Text(stringResource(R.string.price) + " (old, optional)") },
                 singleLine = true, modifier = Modifier.fillMaxWidth()
             )
+            OutlinedTextField(
+                value = brand, onValueChange = { brand = it },
+                label = { Text(stringResource(R.string.brand)) },
+                singleLine = true, modifier = Modifier.fillMaxWidth()
+            )
             Text(text = stringResource(R.string.category), fontWeight = FontWeight.SemiBold)
             Categories.all.forEach { cat ->
                 Row(
@@ -437,10 +663,16 @@ fun AdminProductScreen(
                         price = priceValue,
                         oldPrice = oldPrice.toDoubleOrNull(),
                         category = category,
+                        brand = brand.trim().ifBlank { "Munsi" },
                         imageUrl = imageUrl.trim().ifBlank { null },
                         stock = stockValue,
                         rating = existing?.rating ?: 4.5f,
-                        isFeatured = featured
+                        soldCount = existing?.soldCount ?: 0,
+                        createdAt = existing?.createdAt ?: System.currentTimeMillis(),
+                        sellerId = existing?.sellerId ?: (viewModel.currentUserEmail ?: "admin"),
+                        isFeatured = featured,
+                        isFlashSale = existing?.isFlashSale ?: false,
+                        flashPrice = existing?.flashPrice
                     )
                     viewModel.saveProduct(product)
                     onBack()

@@ -45,6 +45,7 @@ fun AuthScreen(viewModel: StoreViewModel, onDone: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var referralCode by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
@@ -121,6 +122,16 @@ fun AuthScreen(viewModel: StoreViewModel, onDone: () -> Unit) {
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
+        if (tab == 1) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = referralCode,
+                onValueChange = { referralCode = it.uppercase() },
+                label = { Text(stringResource(R.string.referral_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         if (message != null) {
             Text(text = message!!, color = MaterialTheme.colorScheme.error)
@@ -139,7 +150,7 @@ fun AuthScreen(viewModel: StoreViewModel, onDone: () -> Unit) {
                         if (ok) onDone() else message = if (reason == "invalid") "Wrong email or password" else "Login failed"
                     }
                 } else {
-                    viewModel.register(name.trim(), email, password) { ok, reason ->
+                    viewModel.register(name.trim(), email, password, referralCode.trim()) { ok, reason ->
                         busy = false
                         if (ok) onDone() else message = if (reason == "exists") "This email is already registered" else "Sign up failed"
                     }

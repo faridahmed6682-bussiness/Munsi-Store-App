@@ -53,6 +53,8 @@ fun WishlistScreen(viewModel: StoreViewModel, onProductClick: (String) -> Unit) 
                     product = product,
                     isWishlisted = wishlistIds.contains(product.id),
                     showBnName = viewModel.language == "bn",
+                    flashActive = viewModel.isFlashActive(),
+                    viewModel = viewModel,
                     onClick = { onProductClick(product.id) },
                     onAddToCart = { viewModel.addToCart(product.id) },
                     onToggleWishlist = { viewModel.toggleWishlist(product.id) }

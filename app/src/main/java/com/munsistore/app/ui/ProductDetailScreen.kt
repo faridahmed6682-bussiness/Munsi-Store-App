@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.munsistore.app.R
 import com.munsistore.app.data.Product
+import com.munsistore.app.data.effectivePrice
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,11 +53,21 @@ fun ProductDetailScreen(
 ) {
     var product by remember { mutableStateOf<Product?>(null) }
     var quantity by remember { mutableStateOf(1) }
+    var liveRating by remember { mutableStateOf<Double?>(null) }
     val wishlistIds by viewModel.wishlistIds.collectAsState()
     val isWishlisted = wishlistIds.contains(productId)
 
     LaunchedEffect(productId) {
         product = viewModel.getProduct(productId)
+        if (viewModel.searchQuery.isNotBlank()) {
+            viewModel.recordSearch(viewModel.searchQuery)
+        }
+        viewModel.recordView(productId)
+    }
+
+    LaunchedEffect(product) {
+        val p = product ?: return@LaunchedEffect
+        liveRating = viewModel.averageRating(p.id, p.rating)
     }
 
     Scaffold(
@@ -119,7 +130,7 @@ fun ProductDetailScreen(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary
                 )
-                Text(text = p.rating.toString(), modifier = Modifier.padding(start = 4.dp))
+                Text(text = "%.1f".format(liveRating ?: p.rating.toDouble()), modifier = Modifier.padding(start = 4.dp))
                 Text(
                     text = " • " + viewModel.categoryName(p.category),
                     style = MaterialTheme.typography.bodyMedium
@@ -133,16 +144,26 @@ fun ProductDetailScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = formatPrice(p.price),
+                    text = formatPrice(effectivePrice(p, viewModel.isFlashActive())),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                if (p.oldPrice != null) {
+                val struck = if (viewModel.isFlashActive() && p.isFlashSale && p.flashPrice != null) p.price else p.oldPrice
+                if (struck != null) {
                     Text(
-                        text = formatPrice(p.oldPrice),
+                        text = formatPrice(struck),
                         style = MaterialTheme.typography.bodyLarge,
                         textDecoration = TextDecoration.LineThrough,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                if (viewModel.isFlashActive() && p.isFlashSale && p.flashPrice != null) {
+                    Text(
+                        text = stringResource(R.string.flash_sale),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -192,6 +213,12 @@ fun ProductDetailScreen(
             ) {
                 Text(stringResource(R.string.buy_now))
             }
+            Spacer(modifier = Modifier.height(24.dp))
+            ReviewsSection(
+                viewModel = viewModel,
+                productId = p.id,
+                fallbackRating = p.rating
+            )
         }
     }
 }

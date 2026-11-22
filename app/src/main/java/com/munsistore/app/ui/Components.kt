@@ -87,7 +87,9 @@ fun statusColor(status: String): Color {
     return when (status) {
         OrderStatus.PLACED -> Color(0xFFEF6C00)
         OrderStatus.CONFIRMED -> Color(0xFF1565C0)
+        OrderStatus.PACKED -> Color(0xFF00838F)
         OrderStatus.SHIPPED -> Color(0xFF6A1B9A)
+        OrderStatus.OUT_FOR_DELIVERY -> Color(0xFF4527A0)
         OrderStatus.DELIVERED -> Color(0xFF2E7D32)
         OrderStatus.CANCELLED -> Color(0xFFC62828)
         else -> Color.Gray
@@ -110,4 +112,46 @@ fun StatusChip(status: String, label: String) {
             style = MaterialTheme.typography.labelMedium
         )
     }
+}
+
+/** Row of 5 stars showing an average rating (fills whole stars, rounds half up). */
+@Composable
+fun StarRating(rating: Double, modifier: Modifier = Modifier) {
+    Row(modifier = modifier) {
+        for (i in 1..5) {
+            androidx.compose.material3.Icon(
+                imageVector = if (rating >= i - 0.25) androidx.compose.material.icons.Icons.Filled.Star
+                else androidx.compose.material.icons.Icons.Filled.StarBorder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+/** Tap-to-pick star input (1..5). */
+@Composable
+fun StarInput(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier = modifier) {
+        for (i in 1..5) {
+            androidx.compose.material3.IconButton(onClick = { onSelect(i) }) {
+                androidx.compose.material3.Icon(
+                    imageVector = if (i <= selected) androidx.compose.material.icons.Icons.Filled.Star
+                    else androidx.compose.material.icons.Icons.Filled.StarBorder,
+                    contentDescription = "$i",
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+            }
+        }
+    }
+}
+
+/** Formats a countdown (millis left) as HH:MM:SS. */
+fun formatCountdown(millisLeft: Long): String {
+    val totalSeconds = (millisLeft.coerceAtLeast(0L) / 1000)
+    val h = totalSeconds / 3600
+    val m = (totalSeconds % 3600) / 60
+    val s = totalSeconds % 60
+    return "%02d:%02d:%02d".format(h, m, s)
 }
