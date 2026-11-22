@@ -7,27 +7,52 @@ on **free plans only**: GitHub free public repo + free Actions minutes, Firebase
 Spark (no card, no billing).
 
 - **Repo:** https://github.com/faridahmed6682-bussiness/Munsi-Store-App
-- **Download (APK):** https://github.com/faridahmed6682-bussiness/Munsi-Store-App/releases/tag/v1.0.0
+- **Download (APK):** https://github.com/faridahmed6682-bussiness/Munsi-Store-App/releases/tag/v1.1.0
   — download `app-debug.apk`, open it on an Android phone, allow "Install unknown apps" if asked.
-- **Package:** `com.munsistore.app` • **minSdk 24** (Android 7.0+) • **version 1.0.0**
+- **Package:** `com.munsistore.app` • **minSdk 24** (Android 7.0+) • **version 1.1.0** (versionCode 2)
+
+## What's new in v1.1.0 (Daraz-style)
+- **Flash sale** on home with a live countdown and discounted prices (4 seeded sale products)
+- **Vouchers / promo codes** — percent, fixed amount, free delivery; apply at checkout;
+  admin creates, lists and disables them (seeded: `WELCOME10` 10% off, `FLAT50` ৳50 off over ৳300,
+  `FREEDLV` free delivery over ৳200, `EID20` 20% off over ৳1000)
+- **Payments** — COD, bKash / Nagad / **Rocket** (manual, shop send-money number + transaction-ID field),
+  SSLCommerz shown as a gateway-ready placeholder (not live yet)
+- **Reviews &amp; ratings** (stars + text, live average on cards and detail page) and **product Q&amp;A**
+- **Filters + sorting** — price range, brand, minimum rating, category; sort by price, rating, newest, most popular
+- **Address book** — multiple saved addresses; delivery zones Dhaka City ৳60 / Inside Dhaka ৳80 /
+  Outside Dhaka ৳120 (free over ৳500), charged at checkout
+- **Order tracking timeline** — Placed → Confirmed → Packed → Shipped → Out for delivery → Delivered,
+  with courier name (Steadfast / Pathao / RedX / Paperfly); return / refund request from delivered orders
+- **Referral &amp; coins** — every account gets a referral code (`MUNSI-XXXXXX`); 50 coins for signing up
+  with a code, 1 coin per ৳10 spent on delivered orders, 50 coins to the referrer on the first delivery;
+  redeem up to 10% of the subtotal at checkout (1 coin = ৳1)
+- **Seller mode** — register a shop name, get a seller dashboard with your own products and orders
+- **Recently viewed + "Recommended for you"** on home; **trending searches**
+- **Local notifications** for order status changes (toggle in Profile; needs the notification permission
+  on Android 13+)
 
 ## Features
 
 ### Customer app
 - Product catalog with categories (razor, oral care, bath, grocery, cosmetics, handmade)
 - Search (English + Bengali names), product details with price / old price / rating / stock
-- Cart with quantity controls, delivery fee (free over ৳500, otherwise ৳60)
-- Checkout with **Cash on Delivery**, **bKash** and **Nagad** (manual — send money, mention order ID)
-- Order tracking (Placed → Confirmed → Shipped → Delivered, or Cancelled)
-- Wishlist, order history
+- Cart with quantity controls, delivery fee (free over ৳500, otherwise by delivery zone)
+- Checkout with **Cash on Delivery**, **bKash**, **Nagad** and **Rocket** (manual — send money,
+  enter the transaction ID), vouchers and coins
+- Order tracking (Placed → Confirmed → Packed → Shipped → Out for delivery → Delivered, or Cancelled),
+  return / refund requests
+- Wishlist, order history, address book, seller mode
 - Login with **Google Sign-In** + email/password (Firebase Auth when configured, local account fallback offline)
 - Bengali + English UI (switch in Profile; Bengali is the default)
 
 ### Admin panel (inside the app)
 - Login as admin, then Profile → Admin Panel
 - Dashboard: total sales, total orders, pending orders, product count
-- Manage orders: confirm / ship / deliver / cancel
-- Manage products: add / edit / delete (name, Bengali name, price, old price, category, stock, image URL, featured)
+- Manage orders: advance through the full pipeline (confirm / pack / ship / out for delivery / deliver / cancel)
+- Manage products: add / edit / delete (name, Bengali name, price, old price, brand, category, stock, image URL, featured)
+- **Vouchers tab:** create / list / enable-disable / delete promo codes
+- **Returns tab:** approve / reject / mark-refunded on customer return requests
 
 ### Data & offline
 - Room database is the source of truth — the app **works fully offline** with 12 seeded demo products
@@ -81,32 +106,37 @@ Tighten further once real admin accounts exist in Firebase Auth.
 `.github/workflows/android.yml` runs on every push to `main`:
 1. Builds the debug APK (`assembleDebug`).
 2. Uploads it as an Actions artifact.
-3. Publishes/updates the **v1.0.0 GitHub Release** with `app-debug.apk` attached
+3. Publishes/updates the **v1.1.0 GitHub Release** with `app-debug.apk` attached
    (public download link, no extra step needed).
 
 ## Project structure
 ```
 app/src/main/java/com/munsistore/app/
-  MainActivity.kt            Navigation + bottom bar
+  MainActivity.kt            Navigation + bottom bar (home, seller, addresses…)
   MunsiStoreApp.kt           Application: Room + Firebase init + seed data
   data/
-    Models.kt                Room entities (Product, Cart, Order, User…)
-    AppDatabase.kt           Room database + DAOs
-    SeedData.kt              12 demo products + demo admin
+    Models.kt                Room entities (Product, Cart, Order, User, Voucher, Review, Address…)
+    AppDatabase.kt           Room database + DAOs (v2 schema)
+    SeedData.kt              12 demo products + demo admin + vouchers + flash sale + reviews
     StoreRepository.kt       Data operations (Room first, Firestore best-effort)
     FirebaseManager.kt       Firebase init / Auth / Firestore / Storage helpers
-    SessionManager.kt        Login + language preferences
+    SessionManager.kt        Login + language + notification preferences
+    ShopConfig.kt            Payment numbers, delivery fees, coin rules, couriers
+    Notifications.kt         Local order-status notifications
   ui/
     StoreViewModel.kt        Shared view-model for all screens
-    HomeScreen.kt            Catalog, search, categories
-    ProductDetailScreen.kt   Details, quantity, add to cart / buy now
-    CartScreen.kt            Cart + checkout (COD / bKash / Nagad)
-    OrdersScreen.kt          Order list + tracking timeline
+    HomeScreen.kt            Catalog, search, categories, flash sale, trending, recommendations
+    ProductDetailScreen.kt   Details, quantity, add to cart / buy now, reviews + Q&A
+    ReviewsSection.kt        Reviews (stars + text) and product Q&A
+    CartScreen.kt            Cart + checkout (COD / bKash / Nagad / Rocket, voucher, coins)
+    OrdersScreen.kt          Order list + tracking timeline + return requests
     WishlistScreen.kt        Wishlist
-    AuthScreen.kt            Email/password + Google sign-in
-    AdminScreen.kt           Dashboard, order + product management
-    ProfileScreen.kt         Profile, language, shop info
-    Components.kt            Shared product tile, price format, status chip
+    AuthScreen.kt            Email/password + Google sign-in (+ referral code)
+    AdminScreen.kt           Dashboard, order + product management, vouchers, returns
+    SellerScreen.kt          Seller registration + seller dashboard
+    AddressBookScreen.kt     Saved delivery addresses + delivery zones
+    ProfileScreen.kt         Profile, coins, referral code, notifications, language, shop info
+    Components.kt            Shared product tile, price format, status chip, stars
     theme/Theme.kt           Munsi Store green Material 3 theme
 app/src/main/res/values/strings.xml       English
 app/src/main/res/values-bn/strings.xml    Bengali
@@ -114,8 +144,18 @@ app/src/main/res/values-bn/strings.xml    Bengali
 
 ## Limitations (honest notes)
 - Debug APK: install it directly; it is **not** a Play Store release (no signing key yet).
-- bKash/Nagad are manual — the app does not call the bKash/Nagad payment APIs
-  (those need a merchant account). The shop confirms payment by phone.
+- bKash/Nagad/Rocket are manual — the app does not call the bKash/Nagad payment APIs
+  (those need a merchant account). The shop confirms payment by phone. SSLCommerz is a
+  placeholder: no gateway keys are wired in yet.
 - Product photos are category icons unless an image URL is pasted in the admin form;
   Firebase Storage upload helper exists in `FirebaseManager.uploadProductImage`.
 - Demo admin password is in the seed data — change it before giving the APK to anyone else.
+- The seeded flash sale ends 36 hours after the app's first run and is not re-seeded
+  automatically — after that the home page simply shows no flash-sale section until an
+  admin adds new flash products (or the app data is cleared).
+- Notifications are local only: they fire when an order's status changes **on the same
+  device** (e.g. the admin advancing an order). A customer on another phone gets no
+  push — that needs Firebase Cloud Messaging, which is not wired in.
+- Seller orders are matched by product ownership; an order mixing two sellers' products
+  appears in both sellers' lists. Coins/referral balances live in the local Room DB
+  (not synced to Firestore), so they don't carry across devices.
