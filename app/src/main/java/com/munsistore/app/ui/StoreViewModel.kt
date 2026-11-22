@@ -119,7 +119,7 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     fun updateNotificationsEnabled(enabled: Boolean) {
-        session.updateNotificationsEnabled(enabled)
+        session.setNotificationsEnabled(enabled)
         notificationsEnabled = enabled
     }
 
