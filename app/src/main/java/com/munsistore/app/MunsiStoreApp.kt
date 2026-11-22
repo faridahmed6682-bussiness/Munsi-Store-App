@@ -7,6 +7,7 @@ import com.munsistore.app.data.NotificationHelper
 import com.munsistore.app.data.SeedData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MunsiStoreApp : Application() {
@@ -37,7 +38,7 @@ class MunsiStoreApp : Application() {
                 SeedData.reviews.forEach { database.reviewDao().insert(it) }
             }
             if (database.questionDao().getByProduct("p01").let {
-                    kotlinx.coroutines.flow.first(it).isEmpty()
+                    it.first().isEmpty()
                 }) {
                 SeedData.questions.forEach { database.questionDao().insert(it) }
             }
