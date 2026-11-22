@@ -33,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.munsistore.app.data.SessionManager
+import com.munsistore.app.ui.AddressBookScreen
 import com.munsistore.app.ui.AdminProductScreen
 import com.munsistore.app.ui.AdminScreen
 import com.munsistore.app.ui.AuthScreen
@@ -43,6 +44,7 @@ import com.munsistore.app.ui.OrderDetailScreen
 import com.munsistore.app.ui.OrdersScreen
 import com.munsistore.app.ui.ProductDetailScreen
 import com.munsistore.app.ui.ProfileScreen
+import com.munsistore.app.ui.SellerScreen
 import com.munsistore.app.ui.StoreViewModel
 import com.munsistore.app.ui.WishlistScreen
 import com.munsistore.app.ui.theme.MunsiStoreTheme
@@ -59,6 +61,8 @@ object Routes {
     const val PROFILE = "profile"
     const val ADMIN = "admin"
     const val ADMIN_PRODUCT = "adminProduct/{productId}"
+    const val SELLER = "seller"
+    const val ADDRESSES = "addresses"
 
     fun detail(productId: String) = "detail/$productId"
     fun orderDetail(orderId: String) = "orderDetail/$orderId"
@@ -218,7 +222,23 @@ fun MunsiStoreNav(viewModel: StoreViewModel) {
                     viewModel = viewModel,
                     onLoginClick = { navController.navigate(Routes.AUTH) },
                     onAdminClick = { navController.navigate(Routes.ADMIN) },
-                    onOrdersClick = { navController.navigate(Routes.ORDERS) }
+                    onOrdersClick = { navController.navigate(Routes.ORDERS) },
+                    onSellerClick = { navController.navigate(Routes.SELLER) },
+                    onAddressesClick = { navController.navigate(Routes.ADDRESSES) }
+                )
+            }
+            composable(Routes.SELLER) {
+                SellerScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onAddProduct = { navController.navigate(Routes.adminProduct("new")) },
+                    onEditProduct = { id -> navController.navigate(Routes.adminProduct(id)) }
+                )
+            }
+            composable(Routes.ADDRESSES) {
+                AddressBookScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable(Routes.ADMIN) {
