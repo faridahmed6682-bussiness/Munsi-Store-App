@@ -72,12 +72,12 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     var sortBy by mutableStateOf(SortBy.NEWEST)
         private set
 
-    fun setSearchQuery(q: String) { searchQuery = q }
+    fun updateSearchQuery(q: String) { searchQuery = q }
     fun setCategory(cat: String?) { selectedCategory = cat }
     fun setPriceRange(min: Double?, max: Double?) { priceMin = min; priceMax = max }
-    fun setBrandFilter(brand: String?) { brandFilter = brand }
-    fun setMinRating(rating: Float) { minRating = rating }
-    fun setSortBy(sort: String) { sortBy = sort }
+    fun updateBrandFilter(brand: String?) { brandFilter = brand }
+    fun updateMinRating(rating: Float) { minRating = rating }
+    fun updateSortBy(sort: String) { sortBy = sort }
     fun clearFilters() {
         priceMin = null; priceMax = null; brandFilter = null; minRating = 0f
         selectedCategory = null
@@ -118,8 +118,8 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     var notificationsEnabled by mutableStateOf(session.notificationsEnabled())
         private set
 
-    fun setNotificationsEnabled(enabled: Boolean) {
-        session.setNotificationsEnabled(enabled)
+    fun updateNotificationsEnabled(enabled: Boolean) {
+        session.updateNotificationsEnabled(enabled)
         notificationsEnabled = enabled
     }
 
@@ -531,7 +531,7 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         userEmailFlow.value = null
     }
 
-    fun setLanguage(lang: String) {
+    fun updateLanguage(lang: String) {
         session.saveLanguage(lang)
         language = lang
     }

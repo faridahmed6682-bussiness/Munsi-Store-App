@@ -97,7 +97,7 @@ fun HomeScreen(viewModel: StoreViewModel, onProductClick: (String) -> Unit) {
                 Spacer(modifier = Modifier.height(12.dp))
                 androidx.compose.material3.OutlinedTextField(
                     value = viewModel.searchQuery,
-                    onValueChange = { viewModel.setSearchQuery(it) },
+                    onValueChange = { viewModel.updateSearchQuery(it) },
                     placeholder = { Text(stringResource(R.string.search_hint)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     singleLine = true,
@@ -141,7 +141,7 @@ fun HomeScreen(viewModel: StoreViewModel, onProductClick: (String) -> Unit) {
                         items(trending) { term ->
                             FilterChip(
                                 selected = false,
-                                onClick = { viewModel.setSearchQuery(term.term) },
+                                onClick = { viewModel.updateSearchQuery(term.term) },
                                 label = { Text(term.term) }
                             )
                         }
@@ -210,35 +210,35 @@ fun HomeScreen(viewModel: StoreViewModel, onProductClick: (String) -> Unit) {
                         item {
                             FilterChip(
                                 selected = viewModel.sortBy == SortBy.NEWEST,
-                                onClick = { viewModel.setSortBy(SortBy.NEWEST) },
+                                onClick = { viewModel.updateSortBy(SortBy.NEWEST) },
                                 label = { Text(stringResource(R.string.sort_newest)) }
                             )
                         }
                         item {
                             FilterChip(
                                 selected = viewModel.sortBy == SortBy.POPULAR,
-                                onClick = { viewModel.setSortBy(SortBy.POPULAR) },
+                                onClick = { viewModel.updateSortBy(SortBy.POPULAR) },
                                 label = { Text(stringResource(R.string.sort_popular)) }
                             )
                         }
                         item {
                             FilterChip(
                                 selected = viewModel.sortBy == SortBy.PRICE_LOW,
-                                onClick = { viewModel.setSortBy(SortBy.PRICE_LOW) },
+                                onClick = { viewModel.updateSortBy(SortBy.PRICE_LOW) },
                                 label = { Text(stringResource(R.string.sort_price_low)) }
                             )
                         }
                         item {
                             FilterChip(
                                 selected = viewModel.sortBy == SortBy.PRICE_HIGH,
-                                onClick = { viewModel.setSortBy(SortBy.PRICE_HIGH) },
+                                onClick = { viewModel.updateSortBy(SortBy.PRICE_HIGH) },
                                 label = { Text(stringResource(R.string.sort_price_high)) }
                             )
                         }
                         item {
                             FilterChip(
                                 selected = viewModel.sortBy == SortBy.RATING,
-                                onClick = { viewModel.setSortBy(SortBy.RATING) },
+                                onClick = { viewModel.updateSortBy(SortBy.RATING) },
                                 label = { Text(stringResource(R.string.sort_rating)) }
                             )
                         }
@@ -452,8 +452,8 @@ private fun FilterDialog(viewModel: StoreViewModel, brands: List<String>, onDism
         confirmButton = {
             Button(onClick = {
                 viewModel.setPriceRange(minText.toDoubleOrNull(), maxText.toDoubleOrNull())
-                viewModel.setBrandFilter(brand)
-                viewModel.setMinRating(rating)
+                viewModel.updateBrandFilter(brand)
+                viewModel.updateMinRating(rating)
                 onDismiss()
             }) { Text(stringResource(R.string.apply_filters)) }
         },

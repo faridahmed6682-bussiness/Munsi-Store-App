@@ -125,7 +125,7 @@ fun ProfileScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = {
-                    viewModel.setLanguage("bn")
+                    viewModel.updateLanguage("bn")
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("bn"))
                     (context as? Activity)?.recreate()
                 },
@@ -135,7 +135,7 @@ fun ProfileScreen(
             }
             OutlinedButton(
                 onClick = {
-                    viewModel.setLanguage("en")
+                    viewModel.updateLanguage("en")
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
                     (context as? Activity)?.recreate()
                 },
@@ -157,7 +157,7 @@ fun ProfileScreen(
             )
             Switch(
                 checked = viewModel.notificationsEnabled,
-                onCheckedChange = { viewModel.setNotificationsEnabled(it) }
+                onCheckedChange = { viewModel.updateNotificationsEnabled(it) }
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
