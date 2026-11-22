@@ -12,6 +12,10 @@ class SessionManager(context: Context) {
     fun isAdmin(): Boolean = prefs.getBoolean(KEY_ADMIN, false)
     fun isLoggedIn(): Boolean = getUserEmail() != null
     fun getLanguage(): String = prefs.getString(KEY_LANG, "bn") ?: "bn"
+    fun notificationsEnabled(): Boolean = prefs.getBoolean(KEY_NOTIF, true)
+    fun setNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_NOTIF, enabled).apply()
+    }
 
     fun saveLogin(email: String, isAdmin: Boolean) {
         prefs.edit().putString(KEY_EMAIL, email).putBoolean(KEY_ADMIN, isAdmin).apply()
@@ -29,5 +33,6 @@ class SessionManager(context: Context) {
         private const val KEY_EMAIL = "user_email"
         private const val KEY_ADMIN = "is_admin"
         private const val KEY_LANG = "language"
+        private const val KEY_NOTIF = "notifications_enabled"
     }
 }
