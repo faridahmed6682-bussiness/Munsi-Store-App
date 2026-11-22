@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "90144245357",
+    "project_id": "munsi-store-a72bb",
+    "storage_bucket": "munsi-store-a72bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90144245357:android:e3305264aa1c5b6a6d2164",
+        "android_client_info": {
+          "package_name": "com.munsistore.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "90144245357-ah0rh2n7gfvo06a2pb1lngqmhci0p7na.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMFAndYtmBSOy9sMWOR3HBd2bsjg-LNBo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "90144245357-ah0rh2n7gfvo06a2pb1lngqmhci0p7na.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
